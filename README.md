@@ -104,19 +104,123 @@ git checkout -b <local-branch> origin/<remote-branch>
 
 ### Branch Geçişleri
 
+#### Local Branch'ler Arası Geçiş
+
 ```bash
-# Branch'ler arası geçiş
+# Mevcut local branch'e geçiş
 git checkout <branch-adı>
-git switch <branch-adı>      # Modern syntax
+git switch <branch-adı>      # Modern syntax (Git 2.23+)
 
 # Önceki branch'e geri dönme
 git checkout -
 git switch -
 
-# Stash ile güvenli geçiş
-git stash push -m "Geçici kayıt"
-git checkout <branch-adı>
+# Branch'i oluşturup hemen geçiş yapma
+git checkout -b <yeni-branch>
+git switch -c <yeni-branch>  # Modern syntax
+
+# Belirli commit'ten branch oluşturup geçiş
+git checkout -b <branch-adı> <commit-hash>
+git switch -c <branch-adı> <commit-hash>
+```
+
+#### Remote Branch'lere Geçiş ve Tracking
+
+```bash
+# Remote branch'leri görme
+git branch -r               # Sadece remote branch'ler
+git branch -a               # Tüm branch'ler (local + remote)
+
+# Remote branch'e geçiş (otomatik tracking)
+git checkout <remote-branch-adı>
+git switch <remote-branch-adı>
+
+# Remote branch'ten local branch oluşturup geçiş
+git checkout -b <local-branch> origin/<remote-branch>
+git switch -c <local-branch> origin/<remote-branch>
+
+# Farklı remote'tan branch tracking
+git checkout -b <local-branch> <remote-name>/<remote-branch>
+
+# Mevcut branch'i remote branch ile ilişkilendirme
+git branch --set-upstream-to=origin/<branch-adı>
+git push -u origin <branch-adı>  # Push ile birlikte upstream ayarlama
+```
+
+#### Güvenli Branch Geçişleri
+
+```bash
+# Uncommitted değişiklikler varken güvenli geçiş
+git stash push -m "Geçici kayıt: $(git branch --show-current)"
+git checkout <hedef-branch>
 git stash pop               # Değişiklikleri geri getirme
+
+# Belirli dosyaları stash'leyip geçiş
+git stash push -m "Sadece belirli dosyalar" <dosya1> <dosya2>
+git checkout <branch-adı>
+
+# Değişiklikleri commit etmeden geçiş (dikkatli!)
+git checkout <branch-adı> --force  # Değişiklikler kaybolur!
+
+# Working directory temizliği kontrolü
+git status --porcelain | wc -l  # 0 ise temiz
+```
+
+#### Branch Geçiş Durumu Kontrolü
+
+```bash
+# Mevcut branch'i öğrenme
+git branch --show-current
+git rev-parse --abbrev-ref HEAD
+
+# Son değişiklikleri görme
+git status --short
+git diff --name-only
+
+# Branch'ler arası fark kontrolü
+git diff <branch1>..<branch2> --name-only
+git log <branch1>..<branch2> --oneline
+
+# Remote tracking durumu
+git remote show origin
+git branch -vv              # Tracking bilgileri ile branch listesi
+```
+
+#### Toplu Branch İşlemleri
+
+```bash
+# Tüm remote branch'leri local'e çekme
+git fetch --all
+for branch in $(git branch -r | grep -v HEAD | sed 's/origin\///'); do
+  git checkout -b $branch origin/$branch 2>/dev/null || true
+done
+
+# Tüm local branch'lerde dolaşma (örnek script)
+for branch in $(git branch --format='%(refname:short)'); do
+  echo "=== $branch ==="
+  git checkout $branch
+  # İstediğiniz işlemleri yapın
+done
+
+# Ana branch'e dönme
+git checkout main || git checkout master
+```
+
+#### Branch Geçiş Shortcuts ve Alias'lar
+
+```bash
+# Faydalı alias'lar tanımlama
+git config --global alias.sw "switch"
+git config --global alias.co "checkout"
+git config --global alias.cob "checkout -b"
+git config --global alias.com "checkout main"
+git config --global alias.cod "checkout develop"
+
+# Son kullanılan branch'leri gösterme
+git reflog | grep checkout | head -10
+
+# Branch geçmişi
+git reflog --grep-reflog="checkout:"
 ```
 
 ### Branch Silme
